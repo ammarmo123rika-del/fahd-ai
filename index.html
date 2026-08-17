@@ -230,7 +230,26 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeSettings()">
   <div class="card">
     <h3>⚙️ Settings</h3>
-    <div class="sub">Pick a model or download a new one. Installed models are listed automatically.</div>
+    <div class="sub">Choose how Fahd AI connects: your local Ollama, or a cloud AI provider so the online site works anywhere.</div>
+    <div class="field">
+      <label>AI Provider</label>
+      <select id="provsel" onchange="setProvider(this.value)">
+        <option value="ollama">Ollama (local — no key)</option>
+        <option value="openai">OpenAI (GPT)</option>
+        <option value="gemini">Google Gemini</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+      </select>
+    </div>
+    <div class="field" id="cloudfields" style="display:none">
+      <label>API Key</label>
+      <input id="apikey" type="password" placeholder="sk-… / AIza… / sk-ant-…" autocomplete="off" onkeydown="if(event.key==='Enter')saveCloud()">
+      <div class="sub" style="margin-top:6px;margin-bottom:0">🔒 Stored only in this browser (localStorage) — never sent to GitHub. Get a key from the provider's site (OpenAI / Google AI Studio / Anthropic).</div>
+      <label style="margin-top:12px;display:block">Model</label>
+      <input id="cloudmodel" list="modelpresets" placeholder="Pick a preset or type any model" onchange="saveCloud()">
+      <datalist id="modelpresets"></datalist>
+      <div id="cloudtest" style="margin-top:8px;font-size:12px"></div>
+    </div>
+    <div id="ollamafields">
     <div class="field">
       <label>AI Model</label>
       <select id="modelsel" onchange="setModel(this.value)"><option value="">Loading…</option></select>
@@ -244,6 +263,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
       <label>Download a model (e.g. qwen2.5:7b, llava, llama3.2)</label>
       <div class="flex"><input id="pullname" placeholder="model:tag" onkeydown="if(event.key==='Enter')pullModel()"><button onclick="pullModel()">⬇ Download</button></div>
       <div id="pullout" class="pullout"></div>
+    </div>
     </div>
     <div class="field">
       <label>Voice language</label>
@@ -262,10 +282,17 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 
 <script>
 let chats=JSON.parse(localStorage.getItem("FAHD_CHATS")||"[]"),current=localStorage.getItem("FAHD_CURRENT")||"";
-let settings=Object.assign({model:"",lang:"auto",theme:"light"},JSON.parse(localStorage.getItem("FAHD_SETTINGS")||"{}"));
+let settings=Object.assign({model:"",lang:"auto",theme:"light",provider:"ollama",apiKey:"",cloudModel:""},JSON.parse(localStorage.getItem("FAHD_SETTINGS")||"{}"));
 let modelInfo={};
 let attachments=[];
 const QUICKIES=[["🧠 Explain","How does AI work?"],["🌐 Website","Build me a website"],["💻 Code","Help me write JavaScript"],["📚 Study","Make a study plan"]];
+const SYSTEM_PROMPT="You are Fahd AI, a capable, friendly AI assistant. Be accurate, honest, and helpful. Think step by step before answering complex questions. Use Markdown for structure: headings, lists, tables, and code blocks when useful. When the user attaches a file (text or image), read it carefully and use it as the main source. For coding requests, give complete, working, idiomatic solutions with brief explanations. If you are not sure about something, say so instead of guessing. Answer in the same language the user writes in.";
+const PROVIDERS={
+  openai:{label:"OpenAI",models:["gpt-4o-mini","gpt-4o","gpt-4.1-mini","gpt-4.1","gpt-4.1-nano"]},
+  gemini:{label:"Google Gemini",models:["gemini-2.0-flash","gemini-2.5-flash","gemini-1.5-flash","gemini-2.0-flash-lite"]},
+  anthropic:{label:"Anthropic Claude",models:["claude-3-5-haiku-latest","claude-3-5-sonnet-latest","claude-haiku-4-5-20251001","claude-sonnet-4-20250514"]}
+};
+function isCloud(){return settings.provider&&settings.provider!=="ollama"}
 const $=x=>document.getElementById(x);
 function save(){localStorage.setItem("FAHD_CHATS",JSON.stringify(chats));localStorage.setItem("FAHD_CURRENT",current);localStorage.setItem("FAHD_SETTINGS",JSON.stringify(settings))}
 function active(){return chats.find(x=>x.id===current)}
@@ -462,11 +489,47 @@ async function pullModel(){
   }catch(e){out.textContent+="\nError: "+e.message}
 }
 function setModel(v){settings.model=v;save();$("modelcap").textContent=modelInfo[v]?"Capabilities: "+(modelInfo[v].vision?"vision ":"")+(modelInfo[v].tools?"tools ":"")||"none":"";updateHeaderModel()}
-function updateHeaderModel(){$("modelname").textContent=settings.model||"choose model"}
+function updateHeaderModel(){
+  if(isCloud())$("modelname").textContent=(settings.cloudModel||"choose model")+" ☁️";
+  else $("modelname").textContent=settings.model||"choose model";
+}
 function setLang(v){settings.lang=v;save()}
-function openSettings(){$("overlay").classList.add("open");$("langsel").value=settings.lang;loadModels()}
+function populateModelPresets(){
+  const p=PROVIDERS[settings.provider];
+  $("modelpresets").innerHTML=p?p.models.map(m=>`<option value="${m}">`).join(""):"";
+}
+function applyProviderUI(){
+  const cloud=isCloud();
+  $("cloudfields").style.display=cloud?"block":"none";
+  $("ollamafields").style.display=cloud?"none":"block";
+  if(cloud){
+    $("apikey").value=settings.apiKey||"";
+    $("cloudmodel").value=settings.cloudModel||"";
+    $("apikey").placeholder=settings.provider==="openai"?"sk-…":settings.provider==="gemini"?"AIza…":"sk-ant-…";
+    populateModelPresets();
+  }
+  updateHeaderModel();
+  $("banner").innerHTML="";
+  checkBackend();
+}
+function setProvider(v){settings.provider=v;save();applyProviderUI()}
+function saveCloud(){
+  settings.apiKey=$("apikey").value.trim();
+  settings.cloudModel=$("cloudmodel").value.trim();
+  save();updateHeaderModel();
+  let t=$("cloudtest");t.textContent="✓ Saved to this browser";t.style.color="#10b981";
+  setTimeout(()=>t.textContent="",2500);
+}
+function pickCloudModel(n){settings.cloudModel=n;save();updateHeaderModel();closeModelMenu();let m=$("cloudmodel");if(m)m.value=n}
+function openSettings(){$("overlay").classList.add("open");$("langsel").value=settings.lang;$("provsel").value=settings.provider||"ollama";applyProviderUI();loadModels()}
 function closeSettings(){$("overlay").classList.remove("open")}
 function populateModelMenu(){
+  if(isCloud()){
+    const p=PROVIDERS[settings.provider];
+    const presets=p?p.models:[];
+    $("modellist").innerHTML=presets.map(n=>`<div class="modelitem" onclick="pickCloudModel('${n}')"><span>${n}</span>${n===(settings.cloudModel||"")?'<span class="ck">✓</span>':""}</div>`).join("")+`<div style="padding:9px 10px;font-size:11px;color:var(--muted)">Type any model in Settings → Model</div>`;
+    return;
+  }
   let names=Object.keys(modelInfo);
   $("modellist").innerHTML=names.length?names.map(n=>
     `<div class="modelitem" onclick="pickModel('${n.replace(/'/g,"\\'")}')"><span>${esc(n)}${modelInfo[n].vision?" 👁":""}</span>${n===settings.model?'<span class="ck">✓</span>':""}</div>`
@@ -493,6 +556,28 @@ function setStatus(state,text){
   s.className="status"+(state==="err"?" err":state==="busy"?" busy":"");
   $("statustext").textContent=text;
 }
+async function chatLocal(c,atts){
+  const body={messages:c.messages,attachments:atts,model:settings.model||undefined};
+  const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok||!r.body){let d;try{d=await r.json()}catch{};throw new Error((d&&d.error)||("Server error "+r.status))}
+  let rd=r.body.getReader(),dec=new TextDecoder(),buf="",out="",err=null;
+  while(true){
+    let {done,value}=await rd.read();if(done)break;
+    buf+=dec.decode(value,{stream:true});
+    let i;
+    while((i=buf.indexOf("\n"))>=0){
+      let line=buf.slice(0,i);buf=buf.slice(i+1);
+      if(!line.trim())continue;
+      try{
+        let o=JSON.parse(line);
+        if(o.d!=null){out+=o.d;updateStream(out);setStatus("busy","Generating…")}
+        else if(o.error){err=o.error}
+      }catch{}
+    }
+  }
+  if(err)throw new Error(err);
+  return out;
+}
 async function send(){
   let el=$("input"),text=el.value.trim();
   if(!text&&!attachments.length)return;
@@ -500,46 +585,161 @@ async function send(){
   let c=active();
   c.messages.push({role:"user",content:text,files:attachments.map(a=>({name:a.name,type:a.type}))});
   if(c.title==="New chat")c.title=(text||attachments[0].name).slice(0,50);
-  let body={messages:c.messages,attachments:attachments.slice(),model:settings.model||undefined};
+  let atts=attachments.slice();
   attachments=[];el.value="";drawAttach();
   c.messages.push({role:"assistant",content:""});
   save();render();streamEl=null;
   setStatus("busy","Thinking…");
   try{
-    let r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    if(!r.ok||!r.body){let d;try{d=await r.json()}catch{};throw new Error((d&&d.error)||("Server error "+r.status))}
-    let rd=r.body.getReader(),dec=new TextDecoder(),buf="",out="",err=null;
-    while(true){
-      let {done,value}=await rd.read();if(done)break;
-      buf+=dec.decode(value,{stream:true});
-      let i;
-      while((i=buf.indexOf("\n"))>=0){
-        let line=buf.slice(0,i);buf=buf.slice(i+1);
-        if(!line.trim())continue;
-        try{
-          let o=JSON.parse(line);
-          if(o.d!=null){out+=o.d;updateStream(out);setStatus("busy","Generating…")}
-          else if(o.error){err=o.error}
-        }catch{}
-      }
-    }
-    if(err)throw new Error(err);
+    let out=isCloud()?await chatRemote(c,atts):await chatLocal(c,atts);
     c.messages[c.messages.length-1].content=out;
-    setStatus("","Ready");save();render();
+    setStatus("",isCloud()?"Ready · ☁️ "+settings.provider:"Ready");
+    save();render();
   }catch(e){
     setStatus("err","Error");
     c.messages[c.messages.length-1].content="❌ "+e.message;save();render();
   }
 }
 
+/* ---------- Cloud providers (OpenAI / Gemini / Anthropic) ---------- */
+function decodeB64(s){
+  try{
+    const bin=atob(s||"");const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }catch{return ""}
+}
+function prepareCloudMessages(history,attachments){
+  const list=history.filter(m=>!(m.role==="assistant"&&!m.content)).map(m=>({role:m.role,content:m.content,files:m.files}));
+  const textParts=[],imgs=[];
+  for(const a of attachments){
+    if(a.type==="text")textParts.push(`[Attachment: ${a.name}]
+${decodeB64(a.data)}`);
+    else imgs.push(a);
+  }
+  let idx=-1;
+  for(let i=list.length-1;i>=0;i--)if(list[i].role==="user"){idx=i;break}
+  if(idx>=0){
+    if(textParts.length)list[idx].content=(list[idx].content?list[idx].content+"\n\n":"")+textParts.join("\n\n");
+    list[idx].images=imgs;
+  }else{
+    list.push({role:"user",content:textParts.join("\n\n")||" ",images:imgs});
+  }
+  return list;
+}
+async function readSSE(r,onDelta,onDone){
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf="";
+  while(true){
+    const {done,value}=await rd.read();if(done)break;
+    buf+=dec.decode(value,{stream:true});
+    let i;
+    while((i=buf.indexOf("\n"))>=0){
+      const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+      if(!line.startsWith("data:"))continue;
+      const p=line.slice(5).trim();
+      if(p==="[DONE]"){if(onDone)onDone();return}
+      if(!p)continue;
+      try{onDelta(JSON.parse(p))}catch{}
+    }
+  }
+}
+async function errFrom(r){
+  let msg="HTTP "+r.status;
+  try{const j=await r.json();msg=(j.error&&(j.error.message||j.error))||j.message||msg}catch{}
+  return msg;
+}
+async function openaiChat(history,attachments,key,model){
+  const list=prepareCloudMessages(history,attachments);
+  const msgs=[{role:"system",content:SYSTEM_PROMPT}];
+  for(const m of list){
+    if(m.role==="user"&&m.images&&m.images.length){
+      const parts=[{type:"text",text:m.content||"Describe this image."}];
+      for(const im of m.images)parts.push({type:"image_url",image_url:{url:"data:image/jpeg;base64,"+im.data}});
+      msgs.push({role:"user",content:parts});
+    }else msgs.push({role:m.role,content:m.content});
+  }
+  const r=await fetch("https://api.openai.com/v1/chat/completions",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+    body:JSON.stringify({model,messages:msgs,stream:true})
+  });
+  if(!r.ok||!r.body)throw new Error(await errFrom(r));
+  let out="";
+  await readSSE(r,o=>{
+    const d=o.choices&&o.choices[0]&&o.choices[0].delta;
+    if(d&&typeof d.content==="string"){out+=d.content;updateStream(out);setStatus("busy","Generating…")}
+  });
+  return out;
+}
+async function geminiChat(history,attachments,key,model){
+  const list=prepareCloudMessages(history,attachments);
+  const contents=list.map(m=>({
+    role:m.role==="assistant"?"model":"user",
+    parts:(()=>{
+      const parts=[];
+      if(m.content)parts.push({text:m.content});
+      if(m.images)for(const im of m.images)parts.push({inline_data:{mime_type:"image/jpeg",data:im.data}});
+      return parts.length?parts:[{text:" "}];
+    })()
+  }));
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents,systemInstruction:{parts:[{text:SYSTEM_PROMPT}]}})
+  });
+  if(!r.ok||!r.body)throw new Error(await errFrom(r));
+  let out="";
+  await readSSE(r,o=>{
+    const cand=o.candidates&&o.candidates[0];
+    if(cand&&cand.content&&cand.content.parts){
+      const t=cand.content.parts.map(p=>p.text||"").join("");
+      if(t){out=t;updateStream(out);setStatus("busy","Generating…")}
+    }
+  });
+  return out;
+}
+async function anthropicChat(history,attachments,key,model){
+  const list=prepareCloudMessages(history,attachments);
+  const msgs=list.map(m=>{
+    if(m.role==="user"&&m.images&&m.images.length){
+      const content=[{type:"text",text:m.content||"Describe this image."}];
+      for(const im of m.images)content.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:im.data}});
+      return {role:"user",content};
+    }
+    return {role:m.role,content:m.content};
+  });
+  const r=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},
+    body:JSON.stringify({model,max_tokens:2048,system:SYSTEM_PROMPT,messages:msgs,stream:true})
+  });
+  if(!r.ok||!r.body)throw new Error(await errFrom(r));
+  let out="";
+  await readSSE(r,o=>{
+    if(o.type==="content_block_delta"&&o.delta&&typeof o.delta.text==="string"){out+=o.delta.text;updateStream(out);setStatus("busy","Generating…")}
+  });
+  return out;
+}
+async function chatRemote(c,attachments){
+  const key=(settings.apiKey||"").trim();
+  if(!key)throw new Error("Add your API key first: Settings (⚙️) → API Key.");
+  const model=(settings.cloudModel||"").trim();
+  if(!model)throw new Error("Choose a cloud model in Settings (⚙️).");
+  const history=c.messages.filter(m=>!(m.role==="assistant"&&!m.content));
+  if(settings.provider==="openai")return openaiChat(history,attachments,key,model);
+  if(settings.provider==="gemini")return geminiChat(history,attachments,key,model);
+  return anthropicChat(history,attachments,key,model);
+}
+
 /* ---------- Backend check (static hosting detection) ---------- */
 async function checkBackend(){
+  if(isCloud()){setStatus("","Ready · ☁️ "+settings.provider);return}
   try{
     let r=await fetch("/api/health",{signal:AbortSignal.timeout(2500)});
     if(!r.ok)throw 0;
   }catch{
     let b=document.createElement("div");b.className="staticbanner";
-    b.innerHTML="🌐 <b>Online demo mode</b> — this is a static version on web hosting. The chat needs Ollama running on your own computer. <b>Run the project locally</b> (START_Fahd_AI.cmd) for the full AI experience.";
+    b.innerHTML="🌐 <b>Online demo mode</b> — no local Ollama here. To use AI on this site, open <b>Settings (⚙️) → AI Provider</b> and add a cloud provider (OpenAI / Gemini / Claude) with your own key.";
     $("banner").appendChild(b);
     setStatus("err","Offline");
   }
