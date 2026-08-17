@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fahd AI</title>
+<style>
+:root{
+  --bg:#f4f6ff; --panel:#ffffff; --panel2:#eef1ff; --border:#dfe4fb;
+  --text:#0f172a; --muted:#64748b;
+  --primary:#4f46e5; --grad:linear-gradient(135deg,#2563eb,#7c3aed,#ec4899);
+  --userbub:#e3e7ff; --hover:#e6ebff;
+  --shadow:0 12px 40px rgba(30,27,74,.09);
+  --radius:16px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#0a0f1e; --panel:#121a30; --panel2:#1a2342; --border:#27304f;
+  --text:#e7ebf7; --muted:#8d97b0;
+  --userbub:#2a2f58; --hover:#1d2747;
+  --shadow:0 12px 40px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);transition:background .25s,color .25s;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#c3cbee;border-radius:8px}
+[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#33406b}
+.app{display:flex;height:100dvh;overflow:hidden}
+
+/* ---------- Sidebar ---------- */
+.side{width:280px;flex:none;background:var(--panel2);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;transition:background .25s,transform .25s}
+.brand{display:flex;align-items:center;gap:11px;margin:4px 2px 18px}
+.brand .tile{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;color:#fff;background:var(--grad);font-size:19px;box-shadow:0 6px 16px rgba(124,58,237,.35)}
+.brand .t{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.brand .s{font-size:11px;color:var(--muted);display:block;font-weight:500;letter-spacing:0}
+.btnnew{width:100%;border:0;border-radius:13px;padding:12px;background:var(--panel);color:var(--primary);font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(30,27,74,.06);transition:transform .15s,box-shadow .15s}
+.btnnew:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(30,27,74,.12)}
+.search{margin:13px 0 6px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--panel);display:flex;align-items:center;gap:8px;color:var(--muted)}
+.search input{border:0;outline:0;width:100%;font-size:14px;background:none;color:var(--text)}
+.sidelabel{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:12px 4px 6px}
+.history{overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px}
+.chat{padding:9px 11px;border-radius:11px;margin:3px 0;display:flex;align-items:center;gap:4px;color:var(--text);font-size:14px;transition:background .15s}
+.chat:hover,.chat.active{background:var(--hover)}
+.chat .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .ops{display:none;flex:none}.chat:hover .ops{display:flex;gap:2px}
+.chat .ops button{border:0;background:none;padding:3px 5px;font-size:12px;border-radius:7px;color:var(--primary)}
+.chat .ops button:hover{background:#c7d2fe}
+.sidefoot{border-top:1px solid var(--border);padding-top:12px;margin-top:8px}
+.sidefoot .row1{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.sidefoot .me{font-size:13px;font-weight:700;color:var(--muted);flex:1}
+.iconbtn{border:0;background:none;font-size:17px;padding:7px;border-radius:10px;color:var(--text)}
+.iconbtn:hover{background:var(--hover)}
+.clearall{width:100%;margin-top:10px;border:1px solid #f4b6bd;background:#fff1f2;color:#dc2626;border-radius:11px;padding:10px;font-weight:700;font-size:13px;transition:background .15s}
+[data-theme="dark"] .clearall{background:#2b1520;border-color:#5a2531}
+.clearall:hover{background:#ffe4e6}
+
+/* ---------- Main ---------- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{height:60px;flex:none;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(8px)}
+.hamburger{display:none;border:0;background:none;font-size:20px;color:var(--text);padding:8px;border-radius:10px}
+.hamburger:hover{background:var(--hover)}
+.topname{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;min-width:0}
+.topname .dot{color:var(--muted);font-weight:500}
+.topright{display:flex;align-items:center;gap:10px}
+.mwrap{position:relative}
+.modelbtn{display:flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--panel);border-radius:11px;padding:7px 12px;font-weight:700;color:var(--primary);font-size:13px;transition:background .15s;max-width:230px}
+.modelbtn:hover{background:var(--hover)}
+.modelbtn .mname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modelmenu{position:absolute;right:0;top:calc(100% + 8px);background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);width:250px;z-index:60;overflow:hidden;animation:pop .18s ease}
+.modelmenu.hidden{display:none}
+@keyframes pop{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.modellist{max-height:260px;overflow-y:auto;padding:6px}
+.modelitem{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text)}
+.modelitem:hover{background:var(--hover)}
+.modelitem .ck{color:var(--primary);font-weight:900}
+.mfoot{border-top:1px solid var(--border);padding:6px}
+.mfoot button{width:100%;border:0;background:none;color:var(--primary);font-weight:700;padding:9px;border-radius:9px;font-size:13px}
+.mfoot button:hover{background:var(--hover)}
+.status{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#10b981}
+.status .dotp{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.status.err{color:#ef4444}.status.err .dotp{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.2)}
+.status.busy{color:#8b5cf6}.status.busy .dotp{background:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.25);animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ---------- Messages ---------- */
+.messages{flex:1;overflow-y:auto;padding:26px 16px 20px;background:radial-gradient(circle at 85% 8%,rgba(167,139,250,.14),transparent 32%),radial-gradient(circle at 8% 85%,rgba(34,211,238,.12),transparent 32%),var(--bg)}
+.inner{max-width:860px;margin:0 auto}
+.welcome{text-align:center;padding-top:12vh}
+.welcome h1{font-size:clamp(26px,4.5vw,42px);margin:0;letter-spacing:-.03em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.welcome p{color:var(--muted);margin:12px 0 0}
+.quick{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.quick button{padding:11px 18px;border-radius:24px;border:1px solid var(--border);background:var(--panel);color:var(--primary);font-weight:700;font-size:14px;transition:transform .15s,box-shadow .15s}
+.quick button:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.msg{display:flex;gap:12px;margin:22px 0;animation:rise .28s ease}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.avatar{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff;background:var(--grad);font-size:14px;box-shadow:0 4px 12px rgba(124,58,237,.3)}
+.user .avatar{background:linear-gradient(135deg,#0891b2,#2563eb);box-shadow:0 4px 12px rgba(8,145,178,.3)}
+.bubble{max-width:min(720px,calc(100% - 48px));white-space:pre-wrap;line-height:1.7;font-size:15px;overflow-wrap:anywhere}
+.user .bubble{background:var(--userbub);padding:12px 16px;border-radius:18px 18px 6px 18px}
+.bubble .c{white-space:pre-wrap}
+.acts{display:flex;gap:4px;margin-top:6px}
+.actbtn{border:0;background:none;font-size:14px;padding:4px 6px;border-radius:8px;opacity:.7;color:var(--text)}
+.actbtn:hover{opacity:1;background:var(--hover)}
+.files{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.filechip{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:4px 10px;font-size:12px;color:var(--primary);max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.filechip button{border:0;background:none;color:#dc2626;padding:0 2px;font-size:12px}
+
+/* ---------- Composer ---------- */
+.composer{flex:none;padding:8px;margin:0 14px 14px;border-radius:20px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow);transition:background .25s}
+.attached{display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 7px}
+.row{display:flex;align-items:flex-end;gap:7px}
+.row textarea{flex:1;border:0;outline:0;resize:none;min-height:44px;max-height:180px;padding:11px 8px;font:inherit;font-size:15px;background:none;color:var(--text)}
+.tbtn{width:44px;height:44px;flex:none;border:0;border-radius:13px;background:var(--panel2);color:var(--primary);font-size:17px;transition:background .15s}
+.tbtn:hover{background:var(--hover)}
+.send{width:44px;height:44px;flex:none;border:0;border-radius:13px;color:#fff;font-size:18px;background:var(--grad);box-shadow:0 5px 14px rgba(124,58,237,.35);transition:transform .12s,box-shadow .15s}
+.send:hover{transform:translateY(-1px)}
+.send:active{transform:scale(.95)}
+.mic.rec{background:#dc2626;color:#fff;animation:pulse 1s infinite}
+.hint{text-align:center;color:var(--muted);font-size:11px;padding:2px 0 1px}
+
+/* ---------- Backdrop (mobile drawer) ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(10,10,30,.45);opacity:0;pointer-events:none;transition:opacity .25s;z-index:80}
+.backdrop.open{opacity:1;pointer-events:auto}
+
+/* ---------- Settings modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(10,10,30,.55);display:none;align-items:center;justify-content:center;z-index:90;padding:16px}
+.overlay.open{display:flex}
+.card{background:var(--panel);border-radius:20px;padding:24px;width:min(470px,100%);max-height:85vh;overflow-y:auto;box-shadow:var(--shadow);animation:pop .2s ease;transition:background .25s}
+.card h3{margin:0 0 4px;letter-spacing:-.02em}
+.card .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.field{margin:14px 0}
+.field label{display:block;font-size:12px;font-weight:800;color:var(--primary);margin-bottom:6px;letter-spacing:.02em}
+.field select,.field input{width:100%;padding:11px;border:1px solid var(--border);border-radius:11px;font-size:14px;background:var(--bg);color:var(--text)}
+.field .flex{display:flex;gap:6px}
+.field .flex input{flex:1}
+.field .flex button{padding:10px 14px;border:0;border-radius:11px;background:var(--primary);color:#fff;font-weight:700;flex:none}
+.modelopt{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.badges span{font-size:10px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;color:var(--primary)}
+.pullout{background:#0b1120;color:#a5f3fc;font:12px Consolas,monospace;border-radius:11px;padding:11px;max-height:140px;overflow-y:auto;white-space:pre-wrap;margin-top:8px;display:none}
+.reco{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.reco button{font-size:11px;border:1px solid var(--border);background:var(--panel);color:var(--primary);border-radius:15px;padding:5px 10px}
+.reco button:hover{background:var(--hover)}
+.errbox{background:#ffe4e6;color:#b91c1c;border:1px solid #fecdd3;border-radius:11px;padding:10px;font-size:13px;margin-top:10px;display:none}
+.closebtn{margin-top:16px;width:100%;padding:12px;border:0;border-radius:12px;background:var(--panel2);color:var(--primary);font-weight:800}
+
+/* ---------- Responsive ---------- */
+@media(max-width:900px){
+  .side{position:fixed;left:0;top:0;bottom:0;transform:translateX(-102%);z-index:100;box-shadow:var(--shadow);border-right:1px solid var(--border)}
+  .side.open{transform:none}
+  .hamburger{display:block}
+  .composer{margin:0 10px calc(10px + env(safe-area-inset-bottom))}
+  .messages{padding:20px 10px 16px}
+  .bubble{max-width:calc(100% - 46px)}
+}
+@media(max-width:520px){
+  .top{padding:0 10px}
+  .modelbtn{max-width:150px;padding:6px 9px;font-size:12px}
+  .status{font-size:12px}
+  .avatar{width:32px;height:32px;border-radius:10px;font-size:12px}
+  .bubble{font-size:14.5px}
+  .tbtn,.send{width:40px;height:40px;border-radius:12px}
+  .quick button{padding:10px 14px;font-size:13px}
+  .welcome{padding-top:9vh}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side" id="side">
+  <div class="brand">
+    <span class="tile">✦</span>
+    <span class="t">Fahd AI<span class="s">Local AI • No API key</span></span>
+  </div>
+  <button class="btnnew" onclick="newChat()">＋ New chat</button>
+  <div class="search">⌕ <input id="find" placeholder="Search history" oninput="drawHistory()"></div>
+  <div class="sidelabel">History</div>
+  <div id="history" class="history"></div>
+  <div class="sidefoot">
+    <div class="row1">
+      <span class="me">Personal AI</span>
+      <button class="iconbtn" id="themebtn" title="Toggle dark mode" onclick="toggleTheme()">🌙</button>
+      <button class="iconbtn" title="Settings" onclick="openSettings()">⚙️</button>
+    </div>
+    <button class="clearall" onclick="clearAll()">🗑 Delete all history</button>
+  </div>
+</aside>
+<div class="backdrop" id="backdrop" onclick="toggleSide()"></div>
+
+<main class="main">
+  <header class="top">
+    <div style="display:flex;align-items:center;gap:4px;min-width:0">
+      <button class="hamburger" id="burger" onclick="toggleSide()" aria-label="Menu">☰</button>
+      <span class="topname">Fahd AI <span class="dot">• Real AI</span></span>
+    </div>
+    <div class="topright">
+      <div class="mwrap">
+        <button id="modelbtn" class="modelbtn" onclick="toggleModels()" title="Switch AI model">🧠 <span id="modelname" class="mname">loading…</span> <span>▾</span></button>
+        <div id="modelmenu" class="modelmenu hidden">
+          <div id="modellist" class="modellist"></div>
+          <div class="mfoot"><button onclick="closeModelMenu();openSettings()">⚙️ Manage models…</button></div>
+        </div>
+      </div>
+      <span id="status" class="status"><span class="dotp"></span><span id="statustext">Ready</span></span>
+    </div>
+  </header>
+
+  <section class="messages"><div id="inner" class="inner"></div></section>
+
+  <div class="composer">
+    <div id="attached" class="attached"></div>
+    <div class="row">
+      <button class="tbtn" title="Attach files" onclick="pickFiles()">📎</button>
+      <textarea id="input" placeholder="Ask Fahd AI anything..." onkeydown="key(event)"></textarea>
+      <button class="tbtn mic" id="micbtn" title="Voice input" onclick="mic()">🎤</button>
+      <button class="send" onclick="send()" title="Send">➤</button>
+    </div>
+    <div class="hint">Real AI • Chat history is saved in this browser</div>
+  </div>
+</main>
+</div>
+<input type="file" id="filepick" multiple accept="image/*,.txt,.md,.json,.js,.html,.css,.csv,.log" style="display:none" onchange="addFiles(this.files)">
+
+<!-- Settings modal -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="card">
+    <h3>⚙️ Settings</h3>
+    <div class="sub">Pick a model or download a new one. Installed models are listed automatically.</div>
+    <div class="field">
+      <label>AI Model</label>
+      <select id="modelsel" onchange="setModel(this.value)"><option value="">Loading…</option></select>
+      <div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center">
+        <button class="reco" style="border:0;background:none;color:var(--primary);padding:0;font-size:12px;font-weight:700" onclick="loadModels()">↻ Refresh list</button>
+        <span id="modelcap" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="reco"></div>
+    </div>
+    <div class="field">
+      <label>Download a model (e.g. qwen2.5:7b, llava, llama3.2)</label>
+      <div class="flex"><input id="pullname" placeholder="model:tag" onkeydown="if(event.key==='Enter')pullModel()"><button onclick="pullModel()">⬇ Download</button></div>
+      <div id="pullout" class="pullout"></div>
+    </div>
+    <div class="field">
+      <label>Voice language</label>
+      <select id="langsel" onchange="setLang(this.value)">
+        <option value="auto">Auto</option>
+        <option value="en-US">English</option>
+        <option value="ar-SA">Arabic</option>
+        <option value="fr-FR">French</option>
+        <option value="es-ES">Spanish</option>
+      </select>
+    </div>
+    <div id="errbox" class="errbox"></div>
+    <button class="closebtn" onclick="closeSettings()">Close</button>
+  </div>
+</div>
+
+<script>
+let chats=JSON.parse(localStorage.getItem("FAHD_CHATS")||"[]"),current=localStorage.getItem("FAHD_CURRENT")||"";
+let settings=Object.assign({model:"",lang:"auto",theme:"light"},JSON.parse(localStorage.getItem("FAHD_SETTINGS")||"{}"));
+let modelInfo={};
+let attachments=[];
+const QUICKIES=[["🧠 Explain","How does AI work?"],["🌐 Website","Build me a website"],["💻 Code","Help me write JavaScript"],["📚 Study","Make a study plan"]];
+const $=x=>document.getElementById(x);
+function save(){localStorage.setItem("FAHD_CHATS",JSON.stringify(chats));localStorage.setItem("FAHD_CURRENT",current);localStorage.setItem("FAHD_SETTINGS",JSON.stringify(settings))}
+function active(){return chats.find(x=>x.id===current)}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function newChat(){let c={id:Date.now().toString(),title:"New chat",messages:[]};chats.unshift(c);current=c.id;save();render();$("input").focus()}
+function drawHistory(){
+  let q=($("find").value||"").toLowerCase();
+  $("history").innerHTML=chats.filter(c=>c.title.toLowerCase().includes(q)).map(c=>
+    `<div class="chat ${c.id===current?"active":""}" data-id="${c.id}" onclick="openChat('${c.id}')">
+       <span class="t">${esc(c.title)}</span>
+       <span class="ops">
+         <button title="Rename" onclick="event.stopPropagation();renameChat('${c.id}')">✎</button>
+         <button title="Delete" onclick="event.stopPropagation();deleteChat('${c.id}')">🗑</button>
+       </span>
+     </div>`).join("")||`<div style="color:var(--muted);font-size:13px;padding:10px">No chats found</div>`;
+}
+function openChat(id){current=id;save();render()}
+function renameChat(id){
+  let wrap=document.querySelector(`.chat[data-id="${id}"]`);
+  let t=wrap&&wrap.querySelector(".t");if(!t)return;
+  let inp=document.createElement("input");
+  inp.value=t.textContent;inp.className="ri";inp.maxLength=80;
+  inp.style.cssText="border:1px solid var(--border);border-radius:8px;padding:5px 7px;font:inherit;font-size:13px;width:100%;outline:none;background:var(--panel);color:var(--text)";
+  inp.onclick=e=>e.stopPropagation();
+  t.replaceWith(inp);inp.focus();inp.select();
+  let done=false;
+  let commit=()=>{
+    if(done)return;done=true;
+    let v=inp.value.trim();
+    let c=chats.find(x=>x.id===id);
+    if(c&&v){c.title=v;save()}
+    drawHistory();
+  };
+  inp.onkeydown=e=>{
+    e.stopPropagation();
+    if(e.key==="Enter")commit();
+    if(e.key==="Escape"){done=true;drawHistory()}
+  };
+  inp.onblur=commit;
+}
+function deleteChat(id){
+  if(!confirm("Delete this chat?"))return;
+  chats=chats.filter(x=>x.id!==id);
+  if(current===id){current=chats.length?chats[0].id:""}
+  save();render();
+}
+function clearAll(){
+  if(!chats.length)return;
+  if(!confirm("Delete ALL chats and history? This cannot be undone."))return;
+  chats=[];current="";attachments=[];save();render();
+}
+function render(){
+  drawHistory();let c=active();let box=$("inner");box.innerHTML="";
+  if(!c||!c.messages.length){
+    let w=document.createElement("div");w.className="welcome";
+    let h=document.createElement("h1");h.textContent="What can I help you with? ✨";
+    let p=document.createElement("p");p.textContent="Ask me anything — local AI, no API key needed.";
+    let q=document.createElement("div");q.className="quick";
+    for(const [emoji,label] of QUICKIES){let b=document.createElement("button");b.textContent=emoji+" "+label;b.onclick=()=>quick(label);q.appendChild(b)}
+    w.append(h,p,q);box.appendChild(w);return;
+  }
+  for(const m of c.messages){
+    let d=document.createElement("div");d.className="msg "+m.role;
+    d.innerHTML=`<div class="avatar">${m.role==="user"?"F":"✦"}</div><div class="bubble"></div>`;
+    if(m.files&&m.files.length){
+      let f=document.createElement("div");f.className="files";
+      f.innerHTML=m.files.map(x=>`<span class="filechip">📎 ${esc(x.name)}</span>`).join("");
+      d.insertBefore(f,d.querySelector(".bubble"));
+    }
+    let b=d.querySelector(".bubble");
+    if(m.role==="assistant"){
+      b.innerHTML='<span class="c"></span><span class="acts"><button class="actbtn" title="Copy reply">📋</button><button class="speakbtn" title="Read aloud">🔊</button></span>';
+      b.querySelector(".c").textContent=m.content;
+      let cb=b.querySelector(".actbtn"),s=b.querySelector(".speakbtn");
+      if(!m.content){cb.style.display="none";s.style.display="none"}
+      cb.onclick=()=>{copyText(m.content);cb.textContent="✅";setTimeout(()=>cb.textContent="📋",1200)};
+      s.onclick=()=>speak(m.content,s);
+    }else{
+      b.textContent=m.content;
+    }
+    box.appendChild(d);
+  }
+  $("inner").parentElement.scrollTop=999999;
+}
+function quick(x){$("input").value=x;send()}
+function key(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}
+
+/* ---------- Attachments ---------- */
+function pickFiles(){$("filepick").value="";$("filepick").click()}
+function addFiles(files){
+  for(const f of files){
+    if(attachments.length>=4){alert("Max 4 attachments per message.");break}
+    if(f.size>8*1024*1024){alert(f.name+" is larger than 8 MB.");continue}
+    if(f.type.startsWith("image/")){
+      let mi=modelInfo[settings.model];
+      if(settings.model&&mi&&!mi.vision){
+        if(!confirm("The selected model ("+settings.model+") does not support images.\nSwitch to a vision model like llava or qwen2.5vl? Click OK to attach anyway."))continue;
+      }
+    }
+    let reader=new FileReader();
+    reader.onload=()=>{
+      attachments.push({name:f.name,type:f.type.startsWith("image/")?"image":"text",data:(reader.result||"").split(",")[1]||""});
+      drawAttach();
+    };
+    reader.readAsDataURL(f);
+  }
+}
+function drawAttach(){
+  $("attached").innerHTML=attachments.map((a,i)=>
+    `<span class="filechip">${a.type==="image"?"🖼":"📎"} ${esc(a.name)} <button onclick="removeAttach(${i})" title="Remove">✕</button></span>`
+  ).join("");
+}
+function removeAttach(i){attachments.splice(i,1);drawAttach()}
+
+/* ---------- Voice ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+function mic(){
+  if(!SR){alert("Voice input needs Chrome or Edge browser.");return}
+  if(rec){try{rec.stop()}catch{};return}
+  try{
+    rec=new SR();
+    rec.lang=settings.lang==="auto"?"en-US":settings.lang;
+    rec.interimResults=true;rec.continuous=false;
+    rec.onresult=e=>{let t="";for(const r of e.results)t+=r[0].transcript;$("input").value=t;$("input").focus()};
+    rec.onend=()=>{rec=null;$("micbtn").classList.remove("rec")};
+    rec.onerror=e=>{
+      rec=null;$("micbtn").classList.remove("rec");
+      if(e.error==="not-allowed")alert("Microphone permission denied. Click the lock icon in the address bar and allow the microphone.");
+      else if(e.error==="no-speech")alert("No speech detected. Try again and speak louder.");
+    };
+    rec.start();$("micbtn").classList.add("rec");
+  }catch(e){alert("Voice input failed: "+e.message)}
+}
+function pickVoice(){
+  if(!("speechSynthesis" in window))return null;
+  let vs=speechSynthesis.getVoices();
+  if(!vs.length)return null;
+  if(settings.lang==="auto")return vs.find(v=>v.lang.toLowerCase().startsWith("en"))||vs[0];
+  let lang=settings.lang.split("-")[0].toLowerCase();
+  return vs.find(v=>v.lang.toLowerCase().startsWith(lang))||vs[0];
+}
+function speak(text,btn){
+  if(!("speechSynthesis" in window)||!text)return;
+  if(speechSynthesis.speaking){speechSynthesis.cancel();if(btn)btn.textContent="🔊";return}
+  let u=new SpeechSynthesisUtterance(text);
+  let v=pickVoice();
+  if(v){u.voice=v;u.lang=v.lang}
+  if(btn)btn.textContent="🔇";
+  u.onend=()=>{if(btn)btn.textContent="🔊"};
+  u.onerror=()=>{if(btn)btn.textContent="🔊"};
+  speechSynthesis.speak(u);
+}
+function copyText(t){try{navigator.clipboard&&navigator.clipboard.writeText(t)}catch{}}
+
+/* ---------- Models ---------- */
+async function loadModels(){
+  try{
+    let r=await fetch("/api/models");let d=await r.json();
+    let sel=$("modelsel");sel.innerHTML="";
+    if(!d.models.length){sel.innerHTML='<option value="">No models installed</option>'}
+    for(const m of d.models){
+      modelInfo[m.name]=m;
+      let b=(m.vision?"👁 ":"")+(m.tools?"⚙️ ":"");
+      let o=document.createElement("option");o.value=m.name;o.textContent=m.name+(b?"("+b.trim()+")":"");
+      if(m.name===settings.model)o.selected=true;
+      sel.appendChild(o);
+    }
+    if(!settings.model&&d.models.length){settings.model=d.models[0].name;save()}
+    if(sel.value)settings.model=sel.value;
+    $("modelcap").textContent=modelInfo[settings.model]?"Capabilities: "+(modelInfo[settings.model].vision?"vision ":"")+(modelInfo[settings.model].tools?"tools ":"")||"none":"Download a model below to get started.";
+  }catch(e){
+    $("errbox").textContent="Could not reach Ollama. Make sure it is running.";$("errbox").style.display="block";
+  }
+  buildReco();
+  updateHeaderModel();
+}
+function buildReco(){
+  let rec=[["llama3.2","Fast default"],["qwen2.5:3b","Fast + strong"],["qwen2.5:7b","Stronger"],["llava","Vision (images)"]];
+  $("reco").innerHTML="Recommended: "+rec.map(r=>`<button onclick="downloadReco('${r[0]}')">${r[0]}</button>`).join(" ");
+}
+function downloadReco(m){$("pullname").value=m;pullModel()}
+async function pullModel(){
+  let m=$("pullname").value.trim();if(!m)return;
+  let out=$("pullout");out.style.display="block";out.textContent="Downloading "+m+"...\n";
+  $("errbox").style.display="none";
+  try{
+    let r=await fetch("/api/pull",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:m})});
+    if(!r.body)throw new Error("No response");
+    let rd=r.body.getReader(),dec=new TextDecoder();
+    while(true){let {done,value}=await rd.read();if(done)break;out.textContent+=dec.decode(value);out.scrollTop=out.scrollHeight}
+    out.textContent+="\n✓ Refreshing list...";
+    await loadModels();
+  }catch(e){out.textContent+="\nError: "+e.message}
+}
+function setModel(v){settings.model=v;save();$("modelcap").textContent=modelInfo[v]?"Capabilities: "+(modelInfo[v].vision?"vision ":"")+(modelInfo[v].tools?"tools ":"")||"none":"";updateHeaderModel()}
+function updateHeaderModel(){$("modelname").textContent=settings.model||"choose model"}
+function setLang(v){settings.lang=v;save()}
+function openSettings(){$("overlay").classList.add("open");$("langsel").value=settings.lang;loadModels()}
+function closeSettings(){$("overlay").classList.remove("open")}
+function populateModelMenu(){
+  let names=Object.keys(modelInfo);
+  $("modellist").innerHTML=names.length?names.map(n=>
+    `<div class="modelitem" onclick="pickModel('${n.replace(/'/g,"\\'")}')"><span>${esc(n)}${modelInfo[n].vision?" 👁":""}</span>${n===settings.model?'<span class="ck">✓</span>':""}</div>`
+  ).join(""):`<div style="padding:10px;color:var(--muted);font-size:12px">No models installed — manage below.</div>`;
+}
+function pickModel(n){setModel(n);closeModelMenu()}
+function toggleModels(){if(!$("modelmenu").classList.contains("hidden"))return closeModelMenu();populateModelMenu();$("modelmenu").classList.remove("hidden")}
+function closeModelMenu(){$("modelmenu").classList.add("hidden")}
+document.addEventListener("click",e=>{if(!e.target.closest(".mwrap"))closeModelMenu()});
+
+/* ---------- Theme + drawer ---------- */
+function applyTheme(){document.documentElement.dataset.theme=settings.theme||"light";let b=$("themebtn");if(b)b.textContent=(settings.theme||"light")==="dark"?"☀️":"🌙"}
+function toggleTheme(){settings.theme=(settings.theme||"light")==="dark"?"light":"dark";applyTheme();save()}
+function toggleSide(){document.getElementById("side").classList.toggle("open");document.getElementById("backdrop").classList.toggle("open")}
+
+/* ---------- Chat ---------- */
+let streamEl=null;
+function updateStream(text){
+  if(!streamEl){let els=document.querySelectorAll(".msg.assistant .bubble .c");streamEl=els[els.length-1]}
+  if(streamEl){streamEl.textContent=text+"▋";$("inner").parentElement.scrollTop=999999}
+}
+function setStatus(state,text){
+  let s=$("status");
+  s.className="status"+(state==="err"?" err":state==="busy"?" busy":"");
+  $("statustext").textContent=text;
+}
+async function send(){
+  let el=$("input"),text=el.value.trim();
+  if(!text&&!attachments.length)return;
+  if(!current)newChat();
+  let c=active();
+  c.messages.push({role:"user",content:text,files:attachments.map(a=>({name:a.name,type:a.type}))});
+  if(c.title==="New chat")c.title=(text||attachments[0].name).slice(0,50);
+  let body={messages:c.messages,attachments:attachments.slice(),model:settings.model||undefined};
+  attachments=[];el.value="";drawAttach();
+  c.messages.push({role:"assistant",content:""});
+  save();render();streamEl=null;
+  setStatus("busy","Thinking…");
+  try{
+    let r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok||!r.body){let d;try{d=await r.json()}catch{};throw new Error((d&&d.error)||("Server error "+r.status))}
+    let rd=r.body.getReader(),dec=new TextDecoder(),buf="",out="",err=null;
+    while(true){
+      let {done,value}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      let i;
+      while((i=buf.indexOf("\n"))>=0){
+        let line=buf.slice(0,i);buf=buf.slice(i+1);
+        if(!line.trim())continue;
+        try{
+          let o=JSON.parse(line);
+          if(o.d!=null){out+=o.d;updateStream(out);setStatus("busy","Generating…")}
+          else if(o.error){err=o.error}
+        }catch{}
+      }
+    }
+    if(err)throw new Error(err);
+    c.messages[c.messages.length-1].content=out;
+    setStatus("","Ready");save();render();
+  }catch(e){
+    setStatus("err","Error");
+    c.messages[c.messages.length-1].content="❌ "+e.message;save();render();
+  }
+}
+
+/* ---------- Init ---------- */
+render();
+loadModels();
+applyTheme();
+if("speechSynthesis" in window){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}
+</script>
+</body>
+</html>

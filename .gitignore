@@ -1,0 +1,17 @@
+# Node
+node_modules/
+npm-debug.log*
+*.log
+
+# Secrets
+.env
+.env.*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Freebuff internal data
+.freebuff/
