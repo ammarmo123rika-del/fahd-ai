@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".git/**",
+      ".freebuff/**",
+      "node_modules/**",
+      "**/*.log",
+      "README.txt",
+      "START_Fahd_AI.cmd",
+      "server.js",
+      ".gitignore"
+    ]
+  }
+}
