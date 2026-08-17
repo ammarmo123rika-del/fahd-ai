@@ -13,5 +13,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Firebase
+firebase-debug.log
+.firebase/
+
 # Freebuff internal data
 .freebuff/
