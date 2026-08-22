@@ -6,21 +6,13 @@ const { spawn } = require("child_process");
 const PORT = 3000;
 const OLLAMA = "http://127.0.0.1:11434";
 const DEFAULT_MODEL = process.env.FAHD_MODEL || "llama3.2";
-const NUM_CTX = Number(process.env.FAHD_CTX || 16384);
-const TEMP = Number(process.env.FAHD_TEMP || 0.7);
+const NUM_CTX = Number(process.env.FAHD_CTX || 2048);
+const TEMP = Number(process.env.FAHD_TEMP || 0.6);
 const MAX_BODY = 15 * 1024 * 1024; // 15 MB request limit (covers base64 images)
 
 const SYSTEM_PROMPT =
   process.env.FAHD_SYSTEM ||
-  [
-    "You are Fahd AI, a capable, friendly AI assistant.",
-    "Be accurate, honest, and helpful. Think step by step before answering complex questions.",
-    "Use Markdown for structure: headings, lists, tables, and code blocks when useful.",
-    "When the user attaches a file (text or image), read it carefully and use it as the main source.",
-    "For coding requests, give complete, working, idiomatic solutions with brief explanations.",
-    "If you are not sure about something, say so instead of guessing.",
-    "Answer in the same language the user writes in.",
-  ].join(" ");
+  'You are Fahd AI, a fast helpful assistant (Arabic/English). Be concise. Use Markdown. Code: complete working solutions. Reply in the user language.';
 
 function send(res, status, type, data) {
   res.writeHead(status, { "Content-Type": type });
@@ -110,7 +102,7 @@ async function streamChat(messages, model, attachments, res) {
         messages: list,
         stream: true,
         keep_alive: "30m",
-        options: { temperature: TEMP, top_p: 0.9, num_ctx: NUM_CTX },
+        options: { temperature: TEMP, top_p: 0.9, num_ctx: NUM_CTX, num_predict: 1024 },
       }),
     });
   } catch {
